@@ -25,36 +25,39 @@ type merkleTree struct {
 
 func (n *node) getNodeHash() {
 
+	// if Leaf node : get hash of value
 	if n.isLeaf {
-
 		out := sha256.Sum256([]byte(n.val))
 		n.nodeHash = out[:]
-		fmt.Println(hex.EncodeToString(n.nodeHash) + " for " + n.val)
 	} else {
 
 		// if node contains only 1 child
-		// transfer the same hash upwards
+		// propagate the same hash upwards
 
 		if n.right == nil && n.left != nil {
+			fmt.Println("hashCOPY")
 			n.nodeHash = n.left.nodeHash
 		} else {
 
 			// else node contains 2 children
 			// parent hash =  hash (child1 | child2)
-			hashSlice := []byte{}
+
+			// ISSUE : sha256 gives different results of hashing.
+			// Solved : https://stackoverflow.com/questions/59860517/calculating-sha256-gives-different-results-after-appending-slices-depending-on-i
+
+			var hashSlice []byte
 			hashSlice = append(hashSlice, n.left.nodeHash...)
 			hashSlice = append(hashSlice, n.right.nodeHash...)
-			fmt.Println(hex.EncodeToString(hashSlice))
 
 			temp := sha256.Sum256(hashSlice)
 			n.nodeHash = temp[:]
-			fmt.Println(hex.EncodeToString(n.nodeHash))
 		}
 	}
 }
 
 // takes data array input and returns a merkle tree
 func buildTree(arr []string) *merkleTree {
+	// fmt.Println(hex.EncodeToString(n.nodeHash) + " for " + n.val)
 
 	n := len(arr)
 	// height of tree = ceil (log(n))
@@ -78,14 +81,17 @@ func buildTree(arr []string) *merkleTree {
 	// iterate level wise
 	tempSlice := outTree.leafNodes
 
-	for level := math.Ceil(math.Log2(float64(n))) - 1; level >= 0; level-- {
+	lim := n
+	height := math.Ceil(math.Log2(float64(n)))
+	for level := height - 1; level >= 0; level-- {
 
-		for nodex := 0; nodex <= int(math.Pow(2, level-1)); nodex += 2 {
+		elems := 0
+		for nodex := 0; nodex < lim; nodex += 2 {
 
-			if tempSlice[nodex].nodeHash == nil {
+			if lim < 2 {
 				break
 			}
-			if !tempSlice[nodex].isLeaf && tempSlice[nodex].right == nil {
+			if lim-nodex < 2 {
 				tempParent := &node{
 					left:   &tempSlice[nodex],
 					right:  nil,
@@ -94,34 +100,59 @@ func buildTree(arr []string) *merkleTree {
 				tempSlice[nodex].parent = tempParent
 				tempParent.getNodeHash()
 				tempSlice[nodex/2] = *tempParent
+				elems++
 
-				if level == 1 {
+				if level <= 0 {
+					outTree.root = tempParent
+					outTree.rootHash = tempParent.nodeHash
+
+				}
+			} else {
+
+				nodey := nodex + 1 // select pairwise elements
+
+				tempParent := &node{
+					left:   &tempSlice[nodex],
+					right:  &tempSlice[nodey],
+					isLeaf: false,
+				}
+
+				tempSlice[nodex].parent = tempParent
+				tempSlice[nodey].parent = tempParent
+
+				tempParent.getNodeHash()
+				tempSlice[nodex/2] = *tempParent
+				elems += 1
+
+				if level <= 0 {
 					outTree.root = tempParent
 					outTree.rootHash = tempParent.nodeHash
 				}
-				break
-			}
-
-			nodey := nodex + 1
-
-			tempParent := &node{
-				left:   &tempSlice[nodex],
-				right:  &tempSlice[nodey],
-				isLeaf: false,
-			}
-
-			tempSlice[nodex].parent = tempParent
-			tempSlice[nodey].parent = tempParent
-
-			tempParent.getNodeHash()
-			tempSlice[nodex/2] = *tempParent
-
-			if level == 1 {
-				outTree.root = tempParent
-				outTree.rootHash = tempParent.nodeHash
 			}
 		}
+		fmt.Print("nodes this level are : ")
+		fmt.Println(lim)
+		lim = elems
+
 	}
+
+	nodex := 0
+	nodey := 1 // select pairwise elements
+
+	tempParent := &node{
+		left:   &tempSlice[nodex],
+		right:  &tempSlice[nodey],
+		isLeaf: false,
+	}
+
+	tempSlice[nodex].parent = tempParent
+	tempSlice[nodey].parent = tempParent
+
+	tempParent.getNodeHash()
+	tempSlice[nodex/2] = *tempParent
+
+	outTree.root = tempParent
+	outTree.rootHash = tempParent.nodeHash
 
 	// fmt.Println((outTree.rootHash))
 	return outTree
@@ -140,6 +171,9 @@ func main() {
 	fmt.Println(hex.EncodeToString(Mtree.rootHash))
 
 	// nodeHashes of left and right nodes
+	fmt.Println("root hash is ")
+	fmt.Println(hex.EncodeToString(Mtree.rootHash))
+
 	fmt.Println("left hash is ")
 	fmt.Println(hex.EncodeToString(Mtree.root.left.nodeHash))
 
@@ -154,4 +188,5 @@ func main() {
 	temp2 := sha256.Sum256(temp)
 	// final (supposed to be) merkle hash
 	fmt.Println(hex.EncodeToString(temp2[:]))
+	fmt.Println(hex.EncodeToString(Mtree.rootHash))
 }
