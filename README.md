@@ -13,12 +13,13 @@ Providing the input of the following array with sha256 encryption :
 ```["hello", "this", "is", "a", "merkle", "tree"]```  
 The resulting merkle looks a bit like this   
 
+
 ```mermaid 
 graph 
-A(c393...eaaa) --> B(c06c...doke)
+A(c393...eaaa) --> B(c06c...f5cd)
 A --> C(487e...d094)
-B --> D(Rhombus)
-B --> E(Rhombus)
+B --> D(8815...0d52)
+B --> E(1bc4...70e2)
 C --> F(487e...d094)
 D --> G(2cf2...9824)  --> M(hello)
 D --> H(1eb7...8408)  --> N(this)

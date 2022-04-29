@@ -121,6 +121,9 @@ func buildTree(arr []string) *merkleTree {
 				tempSlice2[nodex/2] = *tempParent
 				elems += 1
 
+				// debug msg
+				// fmt.Println(hex.EncodeToString(tempParent.nodeHash))
+
 				if level == 0 {
 					outTree.root = tempParent
 					outTree.rootHash = tempParent.nodeHash
@@ -134,6 +137,7 @@ func buildTree(arr []string) *merkleTree {
 	return outTree
 }
 
+// To-Do
 func (m *merkleTree) verifyRootHash() {
 
 }
