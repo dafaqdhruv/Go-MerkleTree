@@ -147,6 +147,7 @@ func main() {
 	fmt.Println("root hash is ")
 	fmt.Println(hex.EncodeToString(Mtree.rootHash))
 
+	// debug
 	// nodeHashes of left and right nodes
 	fmt.Println("left hash is ")
 	fmt.Println(hex.EncodeToString(Mtree.root.left.nodeHash))
