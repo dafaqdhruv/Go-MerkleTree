@@ -9,9 +9,10 @@ Takes an array of strings as input and returns the Merkle root of the tree.
  2. go run test.go
 
 ### Test run result
-Providing the input of the following array with sha256 encryption :
-```["hello", "this", "is", "a", "merkle", "tree"]```
-the resulting merkle looks a bit like this 
+Providing the input of the following array with sha256 encryption :  
+```["hello", "this", "is", "a", "merkle", "tree"]```  
+The resulting merkle looks a bit like this   
+
 ```mermaid 
 graph 
 A(c393...eaaa) --> B(c06c...doke)
