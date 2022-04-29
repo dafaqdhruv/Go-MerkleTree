@@ -33,9 +33,7 @@ func (n *node) getNodeHash() {
 
 		// if node contains only 1 child
 		// propagate the same hash upwards
-
 		if n.right == nil && n.left != nil {
-			fmt.Println("hashCOPY")
 			n.nodeHash = n.left.nodeHash
 		} else {
 
@@ -57,10 +55,8 @@ func (n *node) getNodeHash() {
 
 // takes data array input and returns a merkle tree
 func buildTree(arr []string) *merkleTree {
-	// fmt.Println(hex.EncodeToString(n.nodeHash) + " for " + n.val)
 
 	n := len(arr)
-	// height of tree = ceil (log(n))
 
 	outTree := new(merkleTree)
 	outTree.n = n
@@ -78,31 +74,33 @@ func buildTree(arr []string) *merkleTree {
 		outTree.leafNodes[i].getNodeHash()
 	}
 
-	// iterate level wise
-	tempSlice := outTree.leafNodes
+	tempSlice := outTree.leafNodes // slice to store nodes temporarily
 
-	lim := n
+	lim := n // number of elements in the level below
 	height := math.Ceil(math.Log2(float64(n)))
+
+	// iterate level wise
 	for level := height - 1; level >= 0; level-- {
 
-		elems := 0
+		tempSlice2 := make([]node, n)
+		elems := 0 // will count elements in this level
+
 		for nodex := 0; nodex < lim; nodex += 2 {
 
-			if lim < 2 {
-				break
-			}
-			if lim-nodex < 2 {
-				tempParent := &node{
-					left:   &tempSlice[nodex],
-					right:  nil,
-					isLeaf: false,
-				}
+			// fmt.Printf("working on %f level and %d node of limit %d\n", level, nodex, lim)
+			// if there are odd number of elements in a level
+			if lim%2 == 1 && nodex == lim-1 {
+				tempParent := new(node)
+				tempParent.left = &tempSlice[nodex]
+				tempParent.right = nil
+				tempParent.isLeaf = false
+
 				tempSlice[nodex].parent = tempParent
 				tempParent.getNodeHash()
-				tempSlice[nodex/2] = *tempParent
+				tempSlice2[nodex/2] = *tempParent
 				elems++
 
-				if level <= 0 {
+				if level == 0 {
 					outTree.root = tempParent
 					outTree.rootHash = tempParent.nodeHash
 
@@ -111,50 +109,28 @@ func buildTree(arr []string) *merkleTree {
 
 				nodey := nodex + 1 // select pairwise elements
 
-				tempParent := &node{
-					left:   &tempSlice[nodex],
-					right:  &tempSlice[nodey],
-					isLeaf: false,
-				}
+				tempParent := new(node)
+				tempParent.left = &tempSlice[nodex]
+				tempParent.right = &tempSlice[nodey]
+				tempParent.isLeaf = false
 
 				tempSlice[nodex].parent = tempParent
 				tempSlice[nodey].parent = tempParent
 
 				tempParent.getNodeHash()
-				tempSlice[nodex/2] = *tempParent
+				tempSlice2[nodex/2] = *tempParent
 				elems += 1
 
-				if level <= 0 {
+				if level == 0 {
 					outTree.root = tempParent
 					outTree.rootHash = tempParent.nodeHash
 				}
 			}
 		}
-		fmt.Print("nodes this level are : ")
-		fmt.Println(lim)
+		tempSlice = tempSlice2
 		lim = elems
 
 	}
-
-	nodex := 0
-	nodey := 1 // select pairwise elements
-
-	tempParent := &node{
-		left:   &tempSlice[nodex],
-		right:  &tempSlice[nodey],
-		isLeaf: false,
-	}
-
-	tempSlice[nodex].parent = tempParent
-	tempSlice[nodey].parent = tempParent
-
-	tempParent.getNodeHash()
-	tempSlice[nodex/2] = *tempParent
-
-	outTree.root = tempParent
-	outTree.rootHash = tempParent.nodeHash
-
-	// fmt.Println((outTree.rootHash))
 	return outTree
 }
 
@@ -168,25 +144,14 @@ func main() {
 
 	Mtree := buildTree(words)
 
-	fmt.Println(hex.EncodeToString(Mtree.rootHash))
-
-	// nodeHashes of left and right nodes
 	fmt.Println("root hash is ")
 	fmt.Println(hex.EncodeToString(Mtree.rootHash))
 
+	// nodeHashes of left and right nodes
 	fmt.Println("left hash is ")
 	fmt.Println(hex.EncodeToString(Mtree.root.left.nodeHash))
 
 	fmt.Println("right hash is")
 	fmt.Println(hex.EncodeToString(Mtree.root.right.nodeHash))
 
-	// calculate hash of left and right nodes after appending
-	temp := []byte{}
-	temp = append(temp, Mtree.root.left.nodeHash...)
-	temp = append(temp, Mtree.root.right.nodeHash...)
-	// fmt.Println(hex.EncodeToString(temp))
-	temp2 := sha256.Sum256(temp)
-	// final (supposed to be) merkle hash
-	fmt.Println(hex.EncodeToString(temp2[:]))
-	fmt.Println(hex.EncodeToString(Mtree.rootHash))
 }
