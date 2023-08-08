@@ -1,4 +1,0 @@
-// Problem STatement with GO
-Implement a Merkle Tree
-Given an array of data/strings construct a merkle tree for the data and return the merkle root
-use SHA256
