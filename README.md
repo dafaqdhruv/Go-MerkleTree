@@ -1,6 +1,7 @@
-# Go-Test
+# Go-MerkleTree
 
-A simple implementation of Merkle Tree in Go.  
+A simple implementation of [Merkle Tree](https://en.wikipedia.org/wiki/Merkle_tree) in Go.  
+
 Takes an array of strings as input and returns the Merkle root of the tree.
 
 
