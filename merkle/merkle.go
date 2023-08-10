@@ -2,7 +2,6 @@ package merkle
 
 import (
 	"crypto/sha256"
-	"fmt"
 	"math"
 )
 
@@ -47,7 +46,6 @@ func (n *MerkleNode) generateNodeHash() {
 
 func (n *MerkleNode) BuildTree(arr []string) {
 
-	fmt.Println(arr)
 	if len(arr) == 1 {
 		n.isLeaf = true
 		n.leftChild = nil
