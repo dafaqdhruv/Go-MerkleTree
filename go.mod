@@ -1,4 +1,4 @@
-module test
+module merkleTree
 
 go 1.18
 
