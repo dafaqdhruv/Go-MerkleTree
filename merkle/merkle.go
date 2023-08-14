@@ -23,6 +23,14 @@ import (
 	"oss.terrastruct.com/util-go/go2"
 )
 
+const d2FormatTagToVal = `"%s" -> "%s"
+`
+
+const d2FormatTagDeclareHash = `"%s" : {
+	"%s"
+}
+`
+
 type MerkleNode struct {
 	parent     *MerkleNode
 	LeftChild  *MerkleNode
@@ -142,25 +150,25 @@ func d2Helper(n *MerkleNode, ch chan string) {
 	s := ""
 
 	if n.parent == nil {
-		s += fmt.Sprintf("%s : {%s}\n", n.Tag, hex.EncodeToString(n.NodeHash))
+		s += fmt.Sprintf(d2FormatTagDeclareHash, n.Tag, hex.EncodeToString(n.NodeHash))
 	}
 
 	if n.LeftChild != nil {
 		if n.LeftChild.IsLeaf {
-			s += fmt.Sprintf("%s -> %s\n", n.LeftChild.Tag, n.LeftChild.Val)
+			s += fmt.Sprintf(d2FormatTagDeclareHash, n.LeftChild.Tag, n.LeftChild.Val)
 		}
 
-		s += fmt.Sprintf("%s : {%s}\n", n.LeftChild.Tag, hex.EncodeToString(n.LeftChild.NodeHash))
-		s += fmt.Sprintf("%s -> %s\n", n.Tag, n.LeftChild.Tag)
+		s += fmt.Sprintf(d2FormatTagDeclareHash, n.LeftChild.Tag, hex.EncodeToString(n.LeftChild.NodeHash))
+		s += fmt.Sprintf(d2FormatTagToVal, n.Tag, n.LeftChild.Tag)
 	}
 
 	if n.RightChild != nil {
 		if n.RightChild.IsLeaf {
-			s += fmt.Sprintf("%s -> %s\n", n.RightChild.Tag, n.RightChild.Val)
+			s += fmt.Sprintf(d2FormatTagDeclareHash, n.RightChild.Tag, n.RightChild.Val)
 		}
 
-		s += fmt.Sprintf("%s : {%s}\n", n.RightChild.Tag, hex.EncodeToString(n.RightChild.NodeHash))
-		s += fmt.Sprintf("%s -> %s\n", n.Tag, n.RightChild.Tag)
+		s += fmt.Sprintf(d2FormatTagDeclareHash, n.RightChild.Tag, hex.EncodeToString(n.RightChild.NodeHash))
+		s += fmt.Sprintf(d2FormatTagToVal, n.Tag, n.RightChild.Tag)
 	}
 
 	ch <- s
