@@ -16,5 +16,5 @@ func main() {
 	fmt.Println(hex.EncodeToString(Mtree.RootHash))
 
 	Mtree.SaveToJSON()
-
+	Mtree.SVGfy()
 }
