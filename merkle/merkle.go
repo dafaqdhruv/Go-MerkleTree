@@ -2,7 +2,6 @@ package merkle
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -10,10 +9,8 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"math/big"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
 
@@ -65,7 +62,7 @@ func (n *MerkleNode) generateNodeHash() {
 	}
 }
 
-func (n *MerkleNode) BuildTree(arr []string) {
+func (n *MerkleNode) BuildTree(arr []string, startIdx int) {
 
 	if len(arr) == 1 {
 		n.IsLeaf = true
@@ -73,7 +70,7 @@ func (n *MerkleNode) BuildTree(arr []string) {
 		n.RightChild = nil
 		n.parent = n
 		n.Val = arr[0]
-
+		n.Tag = fmt.Sprintf("Hash%d", startIdx)
 		n.generateNodeHash()
 		return
 	}
@@ -86,13 +83,15 @@ func (n *MerkleNode) BuildTree(arr []string) {
 		mid = 1 << pow2
 	}
 
+	n.Tag = fmt.Sprintf("Hash%d..%d", startIdx, startIdx+len(arr)-1)
+
 	n.LeftChild = NewNode()
-	n.LeftChild.parent = &MerkleNode{}
-	n.LeftChild.BuildTree(arr[:mid])
+	n.LeftChild.parent = n
+	n.LeftChild.BuildTree(arr[:mid], startIdx)
 
 	n.RightChild = NewNode()
 	n.RightChild.parent = n
-	n.RightChild.BuildTree(arr[mid:])
+	n.RightChild.BuildTree(arr[mid:], startIdx+mid)
 
 	n.generateNodeHash()
 }
@@ -232,7 +231,6 @@ func (m *MerkleTree) SaveToJSON() error {
 }
 
 func NewNode() *MerkleNode {
-	x, _ := rand.Int(rand.Reader, big.NewInt(10000))
 	return &MerkleNode{
 		IsLeaf:     false,
 		LeftChild:  nil,
@@ -240,7 +238,7 @@ func NewNode() *MerkleNode {
 		parent:     nil,
 		Val:        "",
 		NodeHash:   []byte{},
-		Tag:        "tag" + strconv.Itoa(int(x.Int64())),
+		Tag:        "",
 	}
 }
 
@@ -252,7 +250,7 @@ func NewTree(arr []string) *MerkleTree {
 		LeafNodes: []MerkleNode{},
 	}
 
-	tree.RootNode.BuildTree(arr)
+	tree.RootNode.BuildTree(arr, 0)
 	tree.RootHash = tree.RootNode.NodeHash
 
 	return tree
