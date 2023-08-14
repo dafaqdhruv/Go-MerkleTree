@@ -116,34 +116,27 @@ func (n *MerkleNode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(intermediate)
 }
 
-
 func (n *MerkleNode) Walk(fn func(n *MerkleNode, out chan string), out chan string) {
 	fn(n, out)
 
-	if n.IsLeaf {
-		fmt.Println("terminal node: ", n.Val)
-	} else {
-		fmt.Println("found node : ", hex.EncodeToString(n.NodeHash))
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-		var wg sync.WaitGroup
-		wg.Add(2)
+	go func() {
+		if n.LeftChild != nil {
+			n.LeftChild.Walk(fn, out)
+		}
+		wg.Done()
+	}()
 
-		go func() {
-			if n.LeftChild != nil {
-				n.LeftChild.Walk(fn, out)
-			}
-			wg.Done()
-		}()
+	go func() {
+		if n.RightChild != nil {
+			n.RightChild.Walk(fn, out)
+		}
+		wg.Done()
+	}()
 
-		go func() {
-			if n.RightChild != nil {
-				n.RightChild.Walk(fn, out)
-			}
-			wg.Done()
-		}()
-
-		wg.Wait()
-	}
+	wg.Wait()
 }
 
 func d2Helper(n *MerkleNode, ch chan string) {
@@ -184,13 +177,14 @@ func (m *MerkleTree) SVGfy() {
 		for {
 			select {
 			case f := <-d2Buffer:
-				out += (f + "\n")
+				out += f
 
-			case <-time.After(2 * time.Second):
+			case <-time.After(time.Second):
 				return out
 			}
 		}
 	}()
+	ioutil.WriteFile("out.d2", []byte(d2tree), 0600)
 
 	// d2 SVG render code
 	ruler, _ := textmeasure.NewRuler()
@@ -208,7 +202,11 @@ func (m *MerkleTree) SVGfy() {
 		Ruler:          ruler,
 	}
 
-	diagram, _, _ := d2lib.Compile(context.Background(), d2tree, compileOpts, renderOpts)
+	diagram, _, err := d2lib.Compile(context.Background(), d2tree, compileOpts, renderOpts)
+	if err != nil {
+		log.Panic(err)
+	}
+
 	out, err := d2svg.Render(diagram, renderOpts)
 	if err != nil {
 		log.Panic(err)
