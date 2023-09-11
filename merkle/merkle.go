@@ -49,24 +49,28 @@ type MerkleTree struct {
 	LeafNodes []*MerkleNode
 }
 
+type Proof struct {
+	Hashes [][]byte
+	Target interface{}
+}
+
+func pairHash(a []byte, b []byte) []byte {
+	// Refer: https://stackoverflow.com/questions/59860517/calculating-sha256-gives-different-results-after-appending-slices-depending-on-i
+	var hashSlice []byte
+	hashSlice = append(hashSlice, a...)
+	hashSlice = append(hashSlice, b...)
+
+	// parent hash =  hash (child1 | child2)
+	digest := sha256.Sum256(hashSlice)
+	return digest[:]
+}
+
 func (n *MerkleNode) generateNodeHash() {
-
 	if n.IsLeaf {
-		out := sha256.Sum256([]byte(n.Val))
-		n.NodeHash = out[:]
+		digest := sha256.Sum256([]byte(fmt.Sprint(n.Val)))
+		n.NodeHash = digest[:]
 	} else {
-		if n.RightChild == nil {
-			n.NodeHash = n.LeftChild.NodeHash
-		} else {
-			// Refer: https://stackoverflow.com/questions/59860517/calculating-sha256-gives-different-results-after-appending-slices-depending-on-i
-			var hashSlice []byte
-			hashSlice = append(hashSlice, n.LeftChild.NodeHash...)
-			hashSlice = append(hashSlice, n.RightChild.NodeHash...)
-
-			// parent hash =  hash (child1 | child2)
-			temp := sha256.Sum256(hashSlice)
-			n.NodeHash = temp[:]
-		}
+		n.NodeHash = pairHash(n.LeftChild.NodeHash, n.RightChild.NodeHash)
 	}
 }
 
@@ -262,7 +266,51 @@ func NewTree(arr []interface{}) *MerkleTree {
 	return tree
 }
 
-// To-Do
-func (m *MerkleTree) verifyRootHash() {
+func (n *MerkleNode) GetPathFromRoot() []*MerkleNode {
+	if n.parent == nil {
+		return []*MerkleNode{n}
+	}
+	return append(n.parent.GetPathFromRoot(), n)
+}
 
+func (proof *Proof) VerifyProof() []byte {
+	digest := sha256.Sum256([]byte(fmt.Sprint(proof.Target)))
+	hash := digest[:]
+
+	for idx := 0; idx < len(proof.Hashes); idx++ {
+		hash = pairHash(hash, proof.Hashes[idx])
+	}
+	return hash[:]
+}
+
+func (m *MerkleTree) GenerateProof(target interface{}) (*Proof, error) {
+	var merklePath []*MerkleNode
+
+	for _, leaf := range m.LeafNodes {
+		if leaf.Val == target {
+			merklePath = leaf.GetPathFromRoot()
+			break
+		}
+	}
+
+	if merklePath == nil {
+		return nil, fmt.Errorf(`GenerateProof("%v"): Target not found in leaf nodes`, target)
+	}
+
+	proof := &Proof{
+		Hashes: make([][]byte, 0),
+		Target: target,
+	}
+
+	parent := merklePath[0]
+	for _, v := range merklePath[1:] {
+		if parent.LeftChild == v {
+			proof.Hashes = append([][]byte{parent.RightChild.NodeHash}, proof.Hashes...)
+		} else {
+			proof.Hashes = append([][]byte{parent.LeftChild.NodeHash}, proof.Hashes...)
+		}
+		parent = v
+	}
+
+	return proof, nil
 }

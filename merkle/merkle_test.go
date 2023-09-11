@@ -37,4 +37,30 @@ func BenchmarkMerkleTreeMult(b *testing.B) {
 	}
 }
 
+func TestMerkleProofs(t *testing.T) {
+	genericObjs := make([]interface{}, len(sampleInput))
+	for i, v := range sampleInput {
+		genericObjs[i] = v
+	}
+
+	tree := NewTree(genericObjs)
+
+	a, _ := hex.DecodeString("1eb79602411ef02cf6fe117897015fff89f80face4eccd50425c45149b148408")
+	b, _ := hex.DecodeString("1bc4a70c8f8296f94c555271a91abe32724d2b9748f9fd8da80337b6cf1270e2")
+	c, _ := hex.DecodeString("487e8e3fb58ea5fc6855763fe7a918bda75f564dd0649d8c6b7aefb6f23bd094")
+	expectedProof := [][]byte{a, b, c}
+
+	proof, err := tree.GenerateProof("hello")
+	assert.Nil(t, err)
+	assert.Equal(t, proof.Target, "hello")
+	assert.Equal(t, proof.Hashes, expectedProof)
+	t.Log("generated proof matches expected proof")
+	assert.Equal(t, proof.VerifyProof(), tree.RootHash)
+
+	_, err = tree.GenerateProof("This")
+	assert.NotNil(t, err)
+
+	_, err = tree.GenerateProof("does not exists")
+	assert.NotNil(t, err)
+
 }
