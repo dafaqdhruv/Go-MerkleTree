@@ -27,7 +27,7 @@ const d2FormatTagToVal = `"%s" -> "%s"
 `
 
 const d2FormatTagDeclareHash = `"%s" : {
-	"%s"
+	\ %s
 }
 `
 
