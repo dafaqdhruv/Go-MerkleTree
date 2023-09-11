@@ -36,7 +36,7 @@ type MerkleNode struct {
 	LeftChild  *MerkleNode
 	RightChild *MerkleNode
 	IsLeaf     bool
-	Val        string
+	Val        interface{}
 
 	NodeHash []byte
 	Tag      string
@@ -46,7 +46,7 @@ type MerkleTree struct {
 	RootNode  *MerkleNode
 	RootHash  []byte
 	N         int
-	LeafNodes []MerkleNode
+	LeafNodes []*MerkleNode
 }
 
 func (n *MerkleNode) generateNodeHash() {
@@ -70,17 +70,14 @@ func (n *MerkleNode) generateNodeHash() {
 	}
 }
 
-func (n *MerkleNode) BuildTree(arr []string, startIdx int) {
+func (n *MerkleNode) BuildTree(arr []interface{}, startIdx int) []*MerkleNode {
 
 	if len(arr) == 1 {
 		n.IsLeaf = true
-		n.LeftChild = nil
-		n.RightChild = nil
-		n.parent = n
 		n.Val = arr[0]
 		n.Tag = fmt.Sprintf("Hash%d", startIdx)
 		n.generateNodeHash()
-		return
+		return []*MerkleNode{n}
 	}
 
 	pow2 := int(math.Floor(math.Log2(float64(len(arr)))))
@@ -91,17 +88,21 @@ func (n *MerkleNode) BuildTree(arr []string, startIdx int) {
 		mid = 1 << pow2
 	}
 
+	leafNodes := []*MerkleNode{}
+
 	n.Tag = fmt.Sprintf("Hash%d..%d", startIdx, startIdx+len(arr)-1)
 
 	n.LeftChild = NewNode()
 	n.LeftChild.parent = n
-	n.LeftChild.BuildTree(arr[:mid], startIdx)
+	leafNodes = append(leafNodes, n.LeftChild.BuildTree(arr[:mid], startIdx)...)
 
 	n.RightChild = NewNode()
 	n.RightChild.parent = n
-	n.RightChild.BuildTree(arr[mid:], startIdx+mid)
+	leafNodes = append(leafNodes, n.RightChild.BuildTree(arr[mid:], startIdx+mid)...)
 
 	n.generateNodeHash()
+
+	return leafNodes
 }
 
 func (n *MerkleNode) MarshalJSON() ([]byte, error) {
@@ -184,7 +185,6 @@ func (m *MerkleTree) SVGfy() {
 			}
 		}
 	}()
-	ioutil.WriteFile("out.d2", []byte(d2tree), 0600)
 
 	// d2 SVG render code
 	ruler, _ := textmeasure.NewRuler()
@@ -248,15 +248,15 @@ func NewNode() *MerkleNode {
 	}
 }
 
-func NewTree(arr []string) *MerkleTree {
+func NewTree(arr []interface{}) *MerkleTree {
 	tree := &MerkleTree{
 		RootNode:  NewNode(),
 		RootHash:  []byte{},
 		N:         len(arr),
-		LeafNodes: []MerkleNode{},
+		LeafNodes: []*MerkleNode{},
 	}
 
-	tree.RootNode.BuildTree(arr, 0)
+	tree.LeafNodes = tree.RootNode.BuildTree(arr, 0)
 	tree.RootHash = tree.RootNode.NodeHash
 
 	return tree
